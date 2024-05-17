@@ -1,0 +1,235 @@
+global proc createconctrlUI()
+{
+if (`window -q -exists createconctrlUI`) deleteUI createconctrlUI;
+window -wh 500 450 -title "createconctrlWin" -maximizeButton 0 -minimizeButton 1 createconctrlUI;
+columnLayout -adjustableColumn 1;
+  rowColumnLayout -numberOfColumns 2 -columnWidth 1 110 -columnWidth 2 150   ;
+      text -l "";
+      checkBox  -v 0 -l "抓取物体名称" -cc "createconctrlchoice TAKENAME" takenamecheckBox;
+      setParent..;
+ textFieldGrp -label "name :" -text "name" -adj 2  nametextFieldGrp; 
+ textFieldGrp -label "hirerarchy :" -text "ctrl_ofs,ctrl_con,ctrl_drn,ctrl,ctrl_sec" -adj 2  hirerarchytextFieldGrp;           
+ rowColumnLayout -numberOfColumns 5 -columnWidth 1 80 -columnWidth 2 80 -columnWidth 3 80 -columnWidth 4 80 ;
+    radioCollection;
+      text -l "控制器形状 :"; 
+      radioButton  -sl -label "circle" -cc "createconctrlchoice OFF" circleradioButton;
+      radioButton -label "cube" -cc "createconctrlchoice OFF" cuberadioButton;
+      radioButton -label "Sphere" -cc "createconctrlchoice OFF" SphereradioButton;
+      radioButton -label "other" -cc "createconctrlchoice ON" otherradioButton;
+          setParent..;
+textFieldGrp -en 0 -label "myconctrlName" -text "controller1"  myconctrlNametextFieldGrp;
+
+separator -style "in" -w 410 -h 20;
+
+rowColumnLayout -numberOfColumns 5 -columnWidth 1 80 -columnWidth 2 80 -columnWidth 3 80 -columnWidth 4 80 ;
+    radioCollection;
+      text -l "控制器中心 :"; 
+      radioButton  -sl -label "transform"  transformButton;
+      radioButton -label "boundBox"  boundBoxButton;
+          setParent..;
+separator -style "in" -w 410 -h 20;
+rowColumnLayout -numberOfColumns 3 -columnWidth 1 120 -columnWidth 2 120 -columnWidth 3 120  ;    
+      text -l "父子关系 :";
+      checkBox -en 1 -label "parent" -cc "createconctrlchoice PARENT" parentcheckBox;
+      text -l "";
+      text -l "约       束 :"; 
+      checkBox  -v 1 -l "parentConstraint" -cc "createconctrlchoice PARENTCONSTRAINT" parentConstraintcheckBox; 
+      checkBox -v 1 -label "scaleConstraint"  scaleConstraintcheckBox;
+      text -l "方       式 :";
+      checkBox -en 0 -label "pointConstraint" pointConstraintcheckBox ;
+      checkBox -en 0 -label "orientConstraint" orientConstraintcheckBox;
+          setParent..;
+separator -style "in" -w 410 -h 20;
+rowColumnLayout -numberOfColumns 3 -columnWidth 1 110 -columnWidth 2 120 -columnWidth 3 120   ;
+    text -l "";
+    checkBox  -v 1 -l "整理层级关系" setparentcheckBox;
+    checkBox  -v 0 -l "add tag" -cc "createconctrlchoice TAKENAME" addTagCheckBox;
+    setParent..;       
+button -l "create!" -bgc 0.1 0.5 0.8 -w 410 -h 40 -c "createconctrlmain";
+showWindow createconctrlUI;
+}
+createconctrlUI;
+
+global proc createconctrlchoice(string $choice)
+{
+switch ($choice)
+{    case "ON":
+      textFieldGrp -e -en 1 myconctrlNametextFieldGrp;
+    break;
+    case "OFF":
+      textFieldGrp -e -en 0 myconctrlNametextFieldGrp;
+    break;
+    case "PARENTCONSTRAINT":
+       checkBox -e -v 0 -en (!`checkBox  -q -v parentConstraintcheckBox`)   pointConstraintcheckBox;
+       checkBox -e -v 0 -en (!`checkBox  -q -v parentConstraintcheckBox`) orientConstraintcheckBox;
+    break;
+    case "TAKENAME":
+       textFieldGrp -e -en (!`checkBox  -q -v takenamecheckBox`) nametextFieldGrp;
+    break;
+    case "PARENT":
+       checkBox -e -v 0 -en (!`checkBox  -q -v parentcheckBox`)   parentConstraintcheckBox;
+       checkBox -e -v 0 -en (!`checkBox  -q -v parentcheckBox`) scaleConstraintcheckBox;
+       checkBox -e -v 0 -en (!`checkBox  -q -v parentcheckBox`)   pointConstraintcheckBox;
+       checkBox -e -v 0 -en (!`checkBox  -q -v parentcheckBox`) orientConstraintcheckBox;
+    break;
+}
+}
+
+global proc createconctrlmain()
+{string $sel[]=`ls  -sl`;
+ string $ofs; 
+ string $con;
+ string $drn;
+ string $PH;
+ string $SN;
+ string $ctrl;
+ string $sec;
+ string $tempCtrl[];
+ string $shape;
+ 
+ string $hirStr = ` textFieldGrp -q  -text  hirerarchytextFieldGrp`;
+ 
+ string $hir[];
+ $numTokens = `tokenize $hirStr "," $hir`;
+ 
+ string $name;
+ string $frontname;    
+for($i=1;$i<=size($sel);$i++)
+{ 
+  ////检查重命名///////////
+  if(size(`match "|" $sel[$i-1]`)!=0)
+  {   
+  error ( $sel[$i-1]+"   Has more object match name!");
+  } 
+  
+  ///是否抓取物体名称/////////////////////
+  if(`checkBox -q -v takenamecheckBox`)
+    {
+      $name=$sel[$i-1];
+    }
+   else
+    { 
+      if(size($sel)>1)
+      {$name=(`textFieldGrp -q  -text  nametextFieldGrp`)+$i;}
+      else
+      {$name=(`textFieldGrp -q  -text  nametextFieldGrp`);}
+    }
+  
+   
+    
+    string $ctHir[];
+    for($n=0;$n<size($hir);$n++)
+    {
+        $ctHir[$n] = `createNode "transform" -name ($name+"_"+$hir[$n])`;
+        if($n >0)
+        {
+            parent $ctHir[$n] $ctHir[$n-1];
+        }
+        if($hir[$n]=="ctrl")
+        {
+            $ctrl = $ctHir[$n];
+        }
+    }
+    
+    $ofs =  $ctHir[0];
+    $sec = $ctHir[size($ctHir)-1];
+
+    
+    if(`radioButton -q -sl circleradioButton`)
+      {$tempCtrl=`circle -nr 1 0 0  -ch 0 -r 1 -name ($name+"_temp")`;
+      $shapes = `listRelatives -s $tempCtrl[0]`;
+      $shape = $shapes[0];
+      parent -r -s $shape $ctrl;
+      rename $shape ($name+"_ctrlShape");
+      delete $tempCtrl;
+      
+      }
+    else if(`radioButton -q -sl  cuberadioButton`)
+      {$tempCtrl[0]=`curve -d 1 -p 0.5 0.5 0.5 -p 0.5 0.5 -0.5 -p -0.5 0.5 -0.5 -p -0.5 -0.5 -0.5 -p 0.5 -0.5 -0.5 -p 0.5 0.5 -0.5 -p -0.5 0.5 -0.5 
+               -p -0.5 0.5 0.5 -p 0.5 0.5 0.5 -p 0.5 -0.5 0.5 -p 0.5 -0.5 -0.5 -p -0.5 -0.5 -0.5 -p -0.5 -0.5 0.5 -p 0.5 -0.5 0.5 
+               -p -0.5 -0.5 0.5 -p -0.5 0.5 0.5 -k 0 -k 1 -k 2 -k 3 -k 4 -k 5 -k 6 -k 7 -k 8 -k 9 -k 10 -k 11 -k 12 -k 13 -k 14 -k 15  -name ($name+"_temp")` ;
+      $shapes = `listRelatives -s $tempCtrl[0]`;
+      $shape = $shapes[0];
+      parent -r -s $shape $ctrl;
+      rename $shape ($name+"_ctrlShape");
+      delete $tempCtrl;                
+      }
+     else if(`radioButton -q -sl SphereradioButton`) 
+      {$tempCtrl[0]=`curve -d 1 -p 0 0 1 -p 0 0.5 0.866025 -p 0 0.866025 0.5 -p 0 1 0 -p 0 0.866025 -0.5 -p 0 0.5 -0.866025 -p 0 0 -1 -p 0 -0.5 -0.866025 
+      -p 0 -0.866025 -0.5 -p 0 -1 0 -p 0 -0.866025 0.5 -p 0 -0.5 0.866025 -p 0 0 1 -p 0.707107 0 0.707107 -p 1 0 0 -p 0.707107 0 -0.707107 -p 0 0 -1 
+      -p -0.707107 0 -0.707107 -p -1 0 0 -p -0.866025 0.5 0 -p -0.5 0.866025 0 -p 0 1 0 -p 0.5 0.866025 0 -p 0.866025 0.5 0 -p 1 0 0 -p 0.866025 -0.5 0 
+      -p 0.5 -0.866025 0 -p 0 -1 0 -p -0.5 -0.866025 0 -p -0.866025 -0.5 0 -p -1 0 0 -p -0.707107 0 0.707107 -p 0 0 1 -k 0 -k 1 -k 2 -k 3 -k 4 -k 5 
+      -k 6 -k 7 -k 8 -k 9 -k 10 -k 11 -k 12 -k 13 -k 14 -k 15 -k 16 -k 17 -k 18 -k 19 -k 20 -k 21 -k 22 -k 23 -k 24 -k 25 -k 26 -k 27 -k 28 -k 29 -k 30 
+      -k 31 -k 32 -n ($name+"_temp")`;
+      
+      $shapes = `listRelatives -s $tempCtrl[0]`;
+      $shape = $shapes[0];
+      parent -r -s $shape $ctrl;
+      rename $shape ($name+"_ctrlShape");
+      delete $tempCtrl;
+      }
+      
+    else if(`radioButton -q -sl  otherradioButton`)
+      {
+       string $mycon=`textFieldGrp -q -text   myconctrlNametextFieldGrp`;
+        $tempCtrl=`duplicate  $mycon`; 
+        $shapes = `listRelatives -s $tempCtrl[0]`;
+        $shape = $shapes[0];
+        parent -r -s $shape $ctrl;
+        rename $shape ($name+"_ctrlShape");
+        delete $tempCtrl;
+        }
+    
+    if(`checkBox -q -v addTagCheckBox`)
+    {
+        
+        string $py_cmd = "import openrig.maya.riglib.control as rig_control;rig_control.tagAsControl(\'"+$ctrl+"\',type='body')";
+        python($py_cmd);
+    }
+    //parent $CONDRVNUL $CONNUL;
+    //parent $CON[0] $CONDRVNUL;
+    
+    if(`radioButton -q -sl  transformButton`)
+    {
+        delete `pointConstraint -offset 0 0 0 -weight 1 $sel[$i-1] $ofs`;
+        delete `orientConstraint -offset 0 0 0 -weight 1 $sel[$i-1] $ofs`;
+    }
+    else
+    {
+        $center = `cluster $sel[$i-1] `;
+        delete `pointConstraint -offset 0 0 0 -weight 1 $center[1] $ofs`;
+        delete `orientConstraint -offset 0 0 0 -weight 1 $center[1] $ofs`;
+        delete $center;
+    
+    }
+      
+    /////constrain//////
+      if(`checkBox  -q -v parentcheckBox`)
+        {parent  $sel[$i-1] $sec;}
+      else
+      {
+        if(`checkBox  -q -v parentConstraintcheckBox`)
+            {parentConstraint -mo -weight 1 $sec $sel[$i-1];}
+        if(`checkBox -q -v scaleConstraintcheckBox`)
+            {scaleConstraint -mo -weight 1 $sec $sel[$i-1];}
+        if(`checkBox -q -v pointConstraintcheckBox`)
+            {pointConstraint -mo -weight 1 $sec $sel[$i-1]; }
+        if(`checkBox -q -v orientConstraintcheckBox`)
+            {orientConstraint -mo -weight 1 $sec $sel[$i-1];}
+        }
+          
+   /////整理    控制器层级/////
+   if(`checkBox -q -v setparentcheckBox`)
+     {if($i>1)
+         {
+          if(`checkBox -q -v takenamecheckBox`)
+            {$frontname=$sel[$i-2];}
+          else
+          {
+            $frontname=(`textFieldGrp -q  -text  nametextFieldGrp`)+($i-1);}    
+            parent $ofs ($frontname+"_"+$hir[$numTokens-1]);
+         }
+     }
+}
+}
+
