@@ -27,8 +27,15 @@ def getClosestVertex(mayaMesh,pos=[0,0,0]):
             closest=list[i]      
     return closest
 
+def matchVertexOrder(sam,tar):
+    '''
+    sam = [sam.vtx[0],sam.vtx[1],sam.vtx[2]]
+    tar = [tar.vtx[0],tar.vtx[1],tar.vtx[2]]
+    '''
+    mel_cmd = 'meshRemap {} {} {} {} {} {};'.format(sam[0],sam[1],sam[2],tar[0],tar[1],tar[2])
+    mel.eval(mel_cmd)
 
-def matchVertexOrder():
+def matchVertexOrderCloset():
     '''
     first select a face of sample mesh, 
     '''
@@ -56,8 +63,10 @@ def matchVertexOrder():
         print sam,tar
         #meshRemap pPlaneShape2.vtx[2] pPlaneShape2.vtx[3] pPlaneShape2.vtx[1] pPlaneShape1.vtx[0] pPlaneShape1.vtx[2] pPlaneShape1.vtx[3];
 
-        mel_cmd = 'meshRemap {} {} {} {} {} {};'.format(sam[0],sam[1],sam[2],tar[0],tar[1],tar[2])
-        mel.eval(mel_cmd)
+        matchVertexOrder(sam,tar)
+        #mel_cmd = 'meshRemap {} {} {} {} {} {};'.format(sam[0],sam[1],sam[2],tar[0],tar[1],tar[2])
+        #mel.eval(mel_cmd)
+
         
-matchVertexOrder()       
+matchVertexOrderCloset()       
 
