@@ -60,7 +60,7 @@ def matchVertexOrderCloset():
             pos = [v[0],v[1],v[2]]
             tar.append(getClosestVertex(mayaMesh,pos))
         
-        print sam,tar
+        #print sam,tar
         #meshRemap pPlaneShape2.vtx[2] pPlaneShape2.vtx[3] pPlaneShape2.vtx[1] pPlaneShape1.vtx[0] pPlaneShape1.vtx[2] pPlaneShape1.vtx[3];
 
         matchVertexOrder(sam,tar)
